@@ -12,6 +12,7 @@ import shutil
 from pathlib import Path
 
 from . import BaseBuilder, BuildException, Builder, BuilderFactory
+from .pixi_install_monitor import PixiInstallMonitor
 from ..environment import Environment
 from ..scheme import from_content as scheme_from_content, from_name as scheme_from_name
 from ..tool.pixi import Pixi
@@ -248,7 +249,34 @@ class PixiBuilder(BaseBuilder):
         manifest_file = env_dir_abs / "pyproject.toml"
         if not manifest_file.exists():
             manifest_file = env_dir_abs / "pixi.toml"
-        pixi.exec("install", "--manifest-path", str(manifest_file.absolute()))
+
+        # Set up install progress monitoring when subscribers are registered.
+        monitor = None
+        if self._progress_subscribers:
+            # Inject -vv if not already present, so stderr emits phase signals.
+            if not any(f in ("-v", "-vv", "-vvv") for f in self._flags):
+                pixi.set_flags(self._flags + ["-vv"])
+
+            monitor = PixiInstallMonitor(
+                env_dir,
+                "default",
+                self._progress_subscribers,
+                lambda msg: [sub(msg) for sub in self._error_subscribers],
+            )
+            pixi.set_error_consumer(monitor.intercept)
+
+        # Ensure the pixi environment is fully installed.
+        try:
+            pixi.exec("install", "--manifest-path", str(manifest_file.absolute()))
+        finally:
+            if monitor is not None:
+                monitor.shutdown()
+                # Restore the original error consumer.
+                pixi.set_error_consumer(
+                    lambda msg: [sub(msg) for sub in self._error_subscribers]
+                )
+                # Restore the original flags.
+                pixi.set_flags(self._flags)
 
     def _build_pixi_environment(self, pixi: Pixi, env_dir: Path) -> Environment:
         """
