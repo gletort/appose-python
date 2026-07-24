@@ -104,7 +104,7 @@ def run(
     def read_streams():
         try:
             _read_streams(process, main_thread, output_consumer, error_consumer)
-        except IOError as e:
+        except OSError as e:
             io_exception[0] = e
         except InterruptedError as e:
             interrupted_exception[0] = e
@@ -148,13 +148,13 @@ def _read_streams(
     def read_stdout():
         try:
             _read_stream(process.stdout, output)
-        except IOError as e:
+        except OSError as e:
             io_exceptions.append(e)
 
     def read_stderr():
         try:
             _read_stream(process.stderr, error)
-        except IOError as e:
+        except OSError as e:
             io_exceptions.append(e)
 
     stdout_thread = threading.Thread(target=read_stdout, daemon=True)

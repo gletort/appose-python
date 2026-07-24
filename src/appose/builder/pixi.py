@@ -11,11 +11,12 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
-from . import BaseBuilder, BuildException, Builder, BuilderFactory
-from .pixi_install_monitor import PixiInstallMonitor
 from ..environment import Environment
-from ..scheme import from_content as scheme_from_content, from_name as scheme_from_name
+from ..scheme import from_content as scheme_from_content
+from ..scheme import from_name as scheme_from_name
 from ..tool.pixi import Pixi
+from . import BaseBuilder, Builder, BuilderFactory, BuildException
+from .pixi_install_monitor import PixiInstallMonitor
 
 
 class PixiBuilder(BaseBuilder):
@@ -203,7 +204,7 @@ class PixiBuilder(BaseBuilder):
             self._write_appose_state_file(env_dir)
             return self._build_pixi_environment(pixi, env_dir)
 
-        except (IOError, KeyboardInterrupt) as e:
+        except (OSError, KeyboardInterrupt) as e:
             raise BuildException(self, cause=e)
 
     def wrap(self, env_dir: str | Path) -> Environment:

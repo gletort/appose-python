@@ -84,33 +84,32 @@ def download(
             final_url, headers={"User-Agent": user_agent()}
         )
 
-        with urllib.request.urlopen(request) as response:
-            with os.fdopen(fd, "wb") as f:
-                chunk_size = 8192
-                downloaded = 0
+        with urllib.request.urlopen(request) as response, os.fdopen(fd, "wb") as f:
+            chunk_size = 8192
+            downloaded = 0
 
-                while True:
-                    chunk = response.read(chunk_size)
-                    if not chunk:
-                        break
+            while True:
+                chunk = response.read(chunk_size)
+                if not chunk:
+                    break
 
-                    f.write(chunk)
-                    downloaded += len(chunk)
+                f.write(chunk)
+                downloaded += len(chunk)
 
-                    if progress_subscriber:
-                        progress_subscriber(downloaded, file_size)
+                if progress_subscriber:
+                    progress_subscriber(downloaded, file_size)
 
         # Verify download completed
         if temp_file.stat().st_size < file_size:
             temp_file.unlink(missing_ok=True)
-            raise IOError(f"Error downloading {name} from: {url_path}")
+            raise OSError(f"Error downloading {name} from: {url_path}")
 
         return temp_file
 
     except Exception as e:
         # Clean up on error
         temp_file.unlink(missing_ok=True)
-        raise IOError(f"Failed to download {name} from {url_path}: {e}") from e
+        raise OSError(f"Failed to download {name} from {url_path}: {e}") from e
 
 
 def un_bzip2(source: Path, destination: Path) -> None:
@@ -128,9 +127,8 @@ def un_bzip2(source: Path, destination: Path) -> None:
     if not source.exists():
         raise FileNotFoundError(f"Source file not found: {source}")
 
-    with bz2.open(source, "rb") as input_file:
-        with open(destination, "wb") as output_file:
-            shutil.copyfileobj(input_file, output_file)
+    with bz2.open(source, "rb") as input_file, open(destination, "wb") as output_file:
+        shutil.copyfileobj(input_file, output_file)
 
 
 def unpack(input_file: Path, output_dir: Path) -> None:
@@ -215,9 +213,11 @@ def un_zip(source: Path, destination: Path) -> None:
             else:
                 output_file.parent.mkdir(parents=True, exist_ok=True)
 
-                with zip_file.open(entry) as input_stream:
-                    with open(output_file, "wb") as output_stream:
-                        shutil.copyfileobj(input_stream, output_stream)
+                with (
+                    zip_file.open(entry) as input_stream,
+                    open(output_file, "wb") as output_stream,
+                ):
+                    shutil.copyfileobj(input_stream, output_stream)
 
                 # Set executable permission if the entry had it
                 # ZipInfo external_attr stores Unix permissions in high-order 16 bits
@@ -283,9 +283,8 @@ def un_tar_bz2(input_file: Path, output_dir: Path) -> None:
         raise FileNotFoundError(f"Input file not found: {input_file}")
 
     # For .tar.bz2, first decompress to .tar, then extract
-    temp_tar = tempfile.NamedTemporaryFile(suffix=".tar", delete=False)
-    temp_tar_path = Path(temp_tar.name)
-    temp_tar.close()
+    with tempfile.NamedTemporaryFile(suffix=".tar", delete=False) as temp_tar:
+        temp_tar_path = Path(temp_tar.name)
 
     try:
         un_bzip2(input_file, temp_tar_path)
@@ -330,7 +329,7 @@ def redirected_url(url: str) -> str:
                 else:
                     return redirected_url(location)
         return url
-    except Exception:
+    except Exception:  # noqa: BLE001 -- if redirect-resolution fails for any reason, fall back to the original URL
         return url
 
 
@@ -359,7 +358,7 @@ def get_file_size(url: str) -> int:
                 return int(content_length)
 
             return 1  # Unknown size
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 -- unknown size is an acceptable fallback for any connection failure
         print(f"Unable to connect to {url}: {e}")
         return 1
 

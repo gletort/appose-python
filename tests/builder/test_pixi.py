@@ -10,10 +10,9 @@ from pathlib import Path
 import pytest
 
 import appose
+from appose.builder import BuildException
 from appose.builder.pixi import PixiBuilder
-
 from tests.test_base import cowsay_and_assert
-
 
 # Get the path to test resources
 TEST_RESOURCES: Path = Path(__file__).parent.parent / "resources" / "envs"
@@ -64,7 +63,7 @@ def test_pixi_vacuous():
     if Path(base).exists():
         shutil.rmtree(base)
 
-    with pytest.raises(Exception):  # Should raise IllegalStateException equivalent
+    with pytest.raises(BuildException):
         appose.pixi().base(base).log_debug().build()
 
 
@@ -74,7 +73,7 @@ def test_pixi_appose_requirement():
     if Path(base).exists():
         shutil.rmtree(base)
 
-    with pytest.raises(Exception):  # Should raise IllegalStateException equivalent
+    with pytest.raises(BuildException):
         (
             appose.pixi()
             .conda("python")

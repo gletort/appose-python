@@ -10,11 +10,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from . import BaseBuilder, BuildException, Builder, BuilderFactory
 from ..environment import Environment
-from ..scheme import from_content as scheme_from_content, from_name as scheme_from_name
+from ..scheme import from_content as scheme_from_content
+from ..scheme import from_name as scheme_from_name
 from ..tool.uv import Uv
 from ..util.platform import is_windows
+from . import BaseBuilder, Builder, BuilderFactory, BuildException
 
 
 class UvBuilder(BaseBuilder):
@@ -178,7 +179,7 @@ class UvBuilder(BaseBuilder):
             self._write_appose_state_file(env_dir)
             return self._create_environment(env_dir)
 
-        except (IOError, KeyboardInterrupt) as e:
+        except (OSError, KeyboardInterrupt) as e:
             raise BuildException(self, cause=e)
 
     def wrap(self, env_dir: str | Path) -> Environment:

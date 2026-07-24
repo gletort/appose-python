@@ -12,8 +12,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from . import Tool
 from ..util import download, filepath, platform
+from . import Tool
 
 
 def _pixi_binary() -> str | None:
@@ -101,7 +101,7 @@ class Pixi(Tool):
 
         pixi_file = Path(self.command)
         if not pixi_file.exists():
-            raise IOError(f"Expected pixi binary is missing: {self.command}")
+            raise OSError(f"Expected pixi binary is missing: {self.command}")
 
         # Set executable permission if needed
         if not platform.is_executable(pixi_file):

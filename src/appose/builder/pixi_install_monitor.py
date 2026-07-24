@@ -14,9 +14,8 @@ import threading
 from pathlib import Path
 from typing import Callable
 
-from . import ProgressConsumer
 from ..util import platform
-
+from . import ProgressConsumer
 
 # -- Stderr patterns (requires -vv) --
 

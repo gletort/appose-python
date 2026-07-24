@@ -38,8 +38,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from . import Tool
 from ..util import download, filepath, platform
+from . import Tool
 
 
 def _micromamba_platform() -> str | None:
@@ -124,7 +124,7 @@ class Mamba(Tool):
         # Verify micromamba binary exists
         mm_file = Path(self.command)
         if not mm_file.exists():
-            raise IOError(f"Expected micromamba binary is missing: {self.command}")
+            raise OSError(f"Expected micromamba binary is missing: {self.command}")
 
         # Set executable permission if needed
         if not platform.is_executable(mm_file):

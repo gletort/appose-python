@@ -22,12 +22,11 @@ from pathlib import Path
 import pytest
 
 import appose
+from appose.builder import BuildException
 from appose.builder.mamba import MambaBuilder
 from appose.builder.pixi import PixiBuilder
 from appose.builder.uv import UvBuilder
-
 from tests.test_base import cowsay_and_assert
-
 
 # Get the path to test resources
 TEST_RESOURCES: Path = Path(__file__).parent.parent / "resources" / "envs"
@@ -94,17 +93,17 @@ def test_uv_with_pyproject_toml():
 
 
 def test_uv_with_environment_yml():
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         appose.uv().content(ENV_YML_STUB).base("target/envs/content-uv-envyml").build()
 
 
 def test_uv_with_pixi_toml():
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         appose.uv().content(PIXI_TOML_STUB).base("target/envs/content-uv-pixi").build()
 
 
 def test_uv_with_unrecognized():
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         appose.uv().content(UNRECOGNIZED).base("target/envs/content-uv-unknown").build()
 
 
@@ -153,14 +152,14 @@ def test_pixi_with_environment_yml():
 
 
 def test_pixi_with_requirements_txt():
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         appose.pixi().content(REQUIREMENTS_TXT_STUB).base(
             "target/envs/content-pixi-requirements"
         ).build()
 
 
 def test_pixi_with_unrecognized():
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         appose.pixi().content(UNRECOGNIZED).base(
             "target/envs/content-pixi-unknown"
         ).build()
@@ -183,28 +182,28 @@ def test_mamba_with_environment_yml():
 
 
 def test_mamba_with_pyproject_toml():
-    with pytest.raises(Exception):
+    with pytest.raises(BuildException):
         appose.mamba().content(PYPROJECT_TOML_STUB).base(
             "target/envs/content-mamba-pyproject"
         ).build()
 
 
 def test_mamba_with_requirements_txt():
-    with pytest.raises(Exception):
+    with pytest.raises(BuildException):
         appose.mamba().content(REQUIREMENTS_TXT_STUB).base(
             "target/envs/content-mamba-requirements"
         ).build()
 
 
 def test_mamba_with_pixi_toml():
-    with pytest.raises(Exception):
+    with pytest.raises(BuildException):
         appose.mamba().content(PIXI_TOML_STUB).base(
             "target/envs/content-mamba-pixi"
         ).build()
 
 
 def test_mamba_with_unrecognized():
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         appose.mamba().content(UNRECOGNIZED).base(
             "target/envs/content-mamba-unknown"
         ).build()
@@ -264,5 +263,5 @@ def test_content_with_pyproject_toml():
 
 
 def test_content_with_unrecognized():
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         appose.content(UNRECOGNIZED).base("target/envs/content-dynamic-unknown").build()

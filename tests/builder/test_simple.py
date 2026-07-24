@@ -8,9 +8,7 @@ import os
 import shutil
 from pathlib import Path
 
-
 from appose.builder import SimpleBuilder
-
 from tests.test_base import assert_complete, maybe_debug
 
 

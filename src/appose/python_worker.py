@@ -32,7 +32,7 @@ from appose.util.message import Args
 class Task:
     def __init__(
         self,
-        worker: "Worker | None" = None,
+        worker: Worker | None = None,
         uuid: str | None = None,
         script: str | None = None,
         inputs: Args | None = None,
@@ -118,7 +118,9 @@ class Task:
             # are treated as class variables in a class definition.
             # See: https://docs.python.org/3/library/functions.html#exec
             _globals = binding
-            exec(compile(block, "<string>", mode="exec"), _globals, binding)
+            exec(  # noqa: S102 -- executing the requested task script is this worker's job
+                compile(block, "<string>", mode="exec"), _globals, binding
+            )
             if last is not None:
                 result = eval(compile(last, "<string>", mode="eval"), _globals, binding)
 
@@ -130,7 +132,7 @@ class Task:
                 # Script produced a non-dict; add it alone to the outputs.
                 self.outputs["result"] = result
             self._report_completion()
-        except BaseException:
+        except BaseException:  # noqa: BLE001 -- any script failure must be reported back, not crash the worker
             self.fail(traceback.format_exc())
 
     def _report_launch(self) -> None:
@@ -157,7 +159,7 @@ class Task:
         # NB: Flush is necessary to ensure service receives the data!
         try:
             print(message.encode(response), flush=True)
-        except BaseException:
+        except BaseException:  # noqa: BLE001 -- any encoding failure must still reach the caller
             if already_terminated:
                 # An exception triggered a failure response which
                 # then triggered another exception. Let's stop here
@@ -268,7 +270,7 @@ def main() -> None:
             init_namespace = {}
             with open(init_script_path, "r", encoding="utf-8") as f:
                 init_code = f.read()
-            exec(init_code, init_namespace)
+            exec(init_code, init_namespace)  # noqa: S102 -- executing the requested init script is intentional
 
             # Export all public (non-underscore) attributes to worker.
             for key, value in init_namespace.items():
@@ -277,7 +279,7 @@ def main() -> None:
 
             # Clean up the temp file.
             os.remove(init_script_path)
-        except BaseException as e:
+        except BaseException as e:  # noqa: BLE001 -- init script failure must not prevent worker startup
             print(f"[WARNING] Init script failed: {e}", file=sys.stderr)
 
     # On Windows, we must import numpy here on the main thread before opening stdin.
@@ -310,7 +312,7 @@ def main() -> None:
                 "[WARNING] See https://github.com/apposed/appose/issues/23 for details.",
                 file=sys.stderr,
             )
-    except Exception:
+    except Exception:  # noqa: BLE001, S110 -- best-effort warning check; failure just skips the warning
         pass
 
     worker.run()

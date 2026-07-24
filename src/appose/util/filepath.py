@@ -35,7 +35,7 @@ def location(c: type) -> Path | None:
             module = sys.modules.get(c.__module__)
             if module and hasattr(module, "__file__") and module.__file__:
                 return Path(module.__file__)
-    except Exception:
+    except Exception:  # noqa: BLE001, S110 -- best-effort introspection; any failure means "unknown"
         pass
     return None
 
@@ -233,9 +233,9 @@ def ensure_directory(file: Path) -> None:
         IOError: If the given path does not exist, or is not a directory.
     """
     if not file.exists():
-        raise IOError(f"Directory does not exist: {file}")
+        raise OSError(f"Directory does not exist: {file}")
     if not file.is_dir():
-        raise IOError(f"Not a directory: {file}")
+        raise OSError(f"Not a directory: {file}")
 
 
 def appose_envs_dir() -> str:

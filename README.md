@@ -72,6 +72,7 @@ Here is a minimal example for calling into Java from Python:
 
 ```python
 import appose
+
 env = appose.java(vendor="zulu", version="17").build()
 with env.groovy() as groovy:
     task = groovy.task("5 + 6")
@@ -119,7 +120,7 @@ with env.groovy() as groovy:
                 numer = task.outputs["numer"]
                 denom = task.outputs["denom"]
                 ratio = numer / denom
-                print(f"Task complete. Result: {numer}/{denom} =~ {ratio}");
+                print(f"Task complete. Result: {numer}/{denom} =~ {ratio}")
             case ResponseType.CANCELATION:
                 print("Task canceled")
             case ResponseType.FAILURE:

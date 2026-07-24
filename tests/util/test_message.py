@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: BSD-2-Clause
 
 import unittest
+from typing import ClassVar
 
 import appose
 from appose.util import message
@@ -45,9 +46,9 @@ class MessageTest(unittest.TestCase):
         "~!@#$%^&*()"
     )
 
-    NUMBERS: list[int] = [1, 1, 2, 3, 5, 8]
+    NUMBERS: ClassVar[list[int]] = [1, 1, 2, 3, 5, 8]
 
-    WORDS: list[str] = ["quick", "brown", "fox"]
+    WORDS: ClassVar[list[str]] = ["quick", "brown", "fox"]
 
     def test_encode(self):
         data = {

@@ -161,11 +161,8 @@ class EnvironmentYmlScheme(Scheme):
         trimmed = content.strip()
 
         # YAML format detection: starts with common conda keys or has key: value pattern.
-        return (
-            trimmed.startswith("name:")
-            or trimmed.startswith("channels:")
-            or trimmed.startswith("dependencies:")
-            or bool(re.match(r"^[a-z_]+:\s*.*", trimmed, re.DOTALL))
+        return trimmed.startswith(("name:", "channels:", "dependencies:")) or bool(
+            re.match(r"^[a-z_]+:\s*.*", trimmed, re.DOTALL)
         )
 
 

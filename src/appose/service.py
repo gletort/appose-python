@@ -15,12 +15,16 @@ import threading
 from enum import Enum
 from pathlib import Path
 from traceback import format_exc
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 from uuid import uuid4
 
-from .syntax import ScriptSyntax, get as syntax_from_name
+from .syntax import ScriptSyntax
+from .syntax import get as syntax_from_name
 from .util import process
 from .util.message import Args, decode, encode, proxify_worker_objects
+
+if TYPE_CHECKING:
+    from typing import Self
 
 
 class TaskException(Exception):
@@ -31,7 +35,7 @@ class TaskException(Exception):
     in a non-successful state (FAILED, CANCELED, or CRASHED).
     """
 
-    def __init__(self, message: str, task: "Task") -> None:
+    def __init__(self, message: str, task: Task) -> None:
         super().__init__(message)
         self.task: Task = task
 
@@ -54,7 +58,7 @@ class Service:
             env_vars.copy() if env_vars is not None else {}
         )
         self._args: list[str] = list(args)
-        self._tasks: dict[str, "Task"] = {}
+        self._tasks: dict[str, Task] = {}
         self._service_id: int = Service._service_count
         Service._service_count += 1
         self._invalid_lines: list[str] = []
@@ -67,7 +71,7 @@ class Service:
         self._init_script: str | None = None
         self._syntax: ScriptSyntax | None = None
 
-    def debug(self, debug_callback: Callable[[str], Any]) -> "Service":
+    def debug(self, debug_callback: Callable[[str], Any]) -> Service:
         """
         Register a callback function to receive messages describing current
         service/worker activity.
@@ -78,7 +82,7 @@ class Service:
         self._debug_callback = debug_callback
         return self
 
-    def init(self, script: str) -> "Service":
+    def init(self, script: str) -> Service:
         """
         Register a script to be executed when the worker process first starts up,
         before any tasks are processed. This is useful for early initialization that
@@ -104,7 +108,7 @@ class Service:
         self._init_script = script
         return self
 
-    def env(self, **vars: str | None) -> "Service":
+    def env(self, **vars: str | None) -> Service:
         """
         Set environment variables to pass to the worker process.
 
@@ -118,7 +122,7 @@ class Service:
         self._env_vars.update(vars)
         return self
 
-    def start(self) -> "Service":
+    def start(self) -> Service:
         """
         Explicitly launch the worker process associated with this service.
 
@@ -167,7 +171,7 @@ class Service:
 
     def task(
         self, script: str, inputs: Args | None = None, queue: str | None = None
-    ) -> "Task":
+    ) -> Task:
         """
         Create a new task, passing the given script to the worker for execution.
 
@@ -380,7 +384,7 @@ class Service:
             # noinspection PyBroadException
             try:
                 line = None if stdout is None else stdout.readline()
-            except Exception:
+            except Exception:  # noqa: BLE001 -- reader thread must never die; log and stop instead
                 # Something went wrong reading the stdout line. Panic!
                 self._debug_service(format_exc())
                 break
@@ -403,7 +407,7 @@ class Service:
                     continue
                 # noinspection PyProtectedMember
                 task._handle(response)
-            except Exception:
+            except Exception:  # noqa: BLE001 -- reader thread must never die; log and skip the bad line
                 # Something went wrong decoding the line of JSON.
                 # Skip it and keep going, but log it first.
                 self._debug_service(f"<INVALID> {line}")
@@ -418,7 +422,7 @@ class Service:
             # noinspection PyBroadException
             try:
                 line = None if stderr is None else stderr.readline()
-            except Exception:
+            except Exception:  # noqa: BLE001 -- reader thread must never die; log and stop instead
                 # Something went wrong reading the stderr line. Panic!
                 self._debug_service(format_exc())
                 break
@@ -482,7 +486,7 @@ class Service:
             return
         self._debug_callback(f"[{prefix}-{self._service_id}] {message}")
 
-    def __enter__(self) -> "Service":
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, exc_type, exc_value, exc_tb) -> None:
@@ -544,14 +548,14 @@ class ResponseType(Enum):
 class TaskEvent:
     def __init__(
         self,
-        task: "Task",
+        task: Task,
         response_type: ResponseType,
         message: str | None = None,
         current: int | None = None,
         maximum: int | None = None,
         info: Args | None = None,
     ) -> None:
-        self.task: "Task" = task
+        self.task: Task = task
         self.response_type: ResponseType = response_type
         self.message: str | None = message
         self.current: int | None = current
@@ -586,11 +590,11 @@ class Task:
         self.outputs: Args = {}
         self.status: TaskStatus = TaskStatus.INITIAL
         self.error: str | None = None
-        self.listeners: list[Callable[["TaskEvent"], None]] = []
+        self.listeners: list[Callable[[TaskEvent], None]] = []
         self.cv: threading.Condition = threading.Condition()
         self.service._tasks[self.uuid] = self
 
-    def start(self) -> "Task":
+    def start(self) -> Task:
         with self.cv:
             if self.status != TaskStatus.INITIAL:
                 raise RuntimeError("Task is not in the INITIAL state")
@@ -602,7 +606,7 @@ class Task:
 
         return self
 
-    def listen(self, listener: Callable[["TaskEvent"], None]) -> None:
+    def listen(self, listener: Callable[[TaskEvent], None]) -> None:
         """
         Register a callback function to be notified of updates to the task.
         """
@@ -612,7 +616,7 @@ class Task:
 
             self.listeners.append(listener)
 
-    def wait_for(self) -> "Task":
+    def wait_for(self) -> Task:
         """
         Wait for this task to complete.
 

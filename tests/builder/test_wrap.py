@@ -13,9 +13,7 @@ from appose.builder import BuildException, SimpleBuilder
 from appose.builder.mamba import MambaBuilder
 from appose.builder.pixi import PixiBuilder
 from appose.util.filepath import delete_recursively
-
 from tests.test_base import cowsay_and_assert
-
 
 # Get the path to test resources
 TEST_RESOURCES: Path = Path(__file__).parent.parent / "resources" / "envs"

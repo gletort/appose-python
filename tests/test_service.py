@@ -2,15 +2,15 @@
 # Copyright (C) 2023 - 2026 Appose developers.
 # SPDX-License-Identifier: BSD-2-Clause
 
+import os
+import re
+import threading
+import time
+from pathlib import Path
 
 import appose
 from appose.service import ResponseType, TaskException, TaskStatus
 from tests.test_base import execute_and_assert, maybe_debug
-from pathlib import Path
-import threading
-import time
-import os
-import re
 
 collatz_groovy = """
 // Computes the stopping time of a given value
@@ -378,7 +378,7 @@ def test_thread_death_stress():
                     task.start()
                 try:
                     task.wait_for()
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001 -- collect any failure from any thread for later assertion
                     with err_lock:
                         errors.append(str(e))
 

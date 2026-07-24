@@ -11,8 +11,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from . import Tool
 from ..util import download, filepath, platform
+from . import Tool
 
 
 def _uv_binary() -> str | None:
@@ -126,7 +126,7 @@ class Uv(Tool):
                 if f.is_dir() and f.name.startswith("uv-")
             ]
             if not platform_dirs:
-                raise IOError(
+                raise OSError(
                     f"Expected uv binary or uv-<platform> directory not found in: {uv_bin_dir}"
                 )
 
@@ -144,7 +144,7 @@ class Uv(Tool):
             platform_dir.rmdir()
 
         if not uv_dest.exists():
-            raise IOError(f"Expected uv binary is missing: {self.command}")
+            raise OSError(f"Expected uv binary is missing: {self.command}")
 
         # Set executable permission if needed
         if not platform.is_executable(uv_dest):

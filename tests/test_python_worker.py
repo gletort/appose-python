@@ -2,9 +2,7 @@
 # Copyright (C) 2023 - 2026 Appose developers.
 # SPDX-License-Identifier: BSD-2-Clause
 
-
 import appose
-
 from tests.test_base import source_override
 
 

@@ -12,7 +12,6 @@ from pathlib import Path
 from appose import Environment
 from appose.service import ResponseType, Task, TaskStatus
 
-
 # Test scripts
 
 COLLATZ_PYTHON = """# Computes the stopping time of a given value

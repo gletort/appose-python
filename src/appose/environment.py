@@ -64,14 +64,14 @@ class Environment:
         # Default implementation - subclasses should override
         return {}
 
-    def builder(self) -> Builder:
+    def builder(self) -> Builder | None:
         """
         Get the builder that created this environment.
 
         Returns:
             The builder instance, or None if not created via a builder
         """
-        ...
+        return None
 
     def type(self) -> str:
         """

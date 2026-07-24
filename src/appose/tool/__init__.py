@@ -14,7 +14,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Callable
 
-from ..util import platform, process, download
+from ..util import download, platform, process
 
 
 class Tool(ABC):
@@ -151,7 +151,7 @@ class Tool(ABC):
         try:
             self.version()
             return True
-        except Exception:
+        except Exception:  # noqa: BLE001 -- any failure to run/parse version means "not installed"
             return False
 
     def exec(self, *args: str, cwd: Path | None = None) -> None:
@@ -209,7 +209,7 @@ class Tool(ABC):
             IOError: If download fails or URL is not available for this platform.
         """
         if self.url is None:
-            raise IOError(
+            raise OSError(
                 f"{self.name} is not available for this platform ({platform.PLATFORM}). "
                 "Please install it manually."
             )
@@ -226,7 +226,6 @@ class Tool(ABC):
         Raises:
             IOError: If decompression/installation fails.
         """
-        pass
 
     def _output(self, line: str) -> None:
         """
@@ -299,8 +298,8 @@ class Tool(ABC):
 
         # Set up output handlers
         if silent:
-            output_handler = lambda line: self._captured_output.append(line)  # noqa: E731
-            error_handler = lambda line: self._captured_error.append(line)  # noqa: E731
+            output_handler = lambda line: self._captured_output.append(line)
+            error_handler = lambda line: self._captured_error.append(line)
         else:
             output_handler = self._output
             error_handler = self._error
@@ -330,4 +329,4 @@ class Tool(ABC):
             if not stderr and stdout:
                 error_msg.append(f"\n\nOutput:\n{stdout}")
 
-            raise IOError("".join(error_msg))
+            raise OSError("".join(error_msg))

@@ -194,19 +194,19 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from ._version import __version__  # noqa: F401
 from .builder import (
     BuildException,
     DynamicBuilder,
     SimpleBuilder,
     find_factory_for_wrapping,
 )
-from .builder.pixi import PixiBuilder
 from .builder.mamba import MambaBuilder
+from .builder.pixi import PixiBuilder
 from .builder.uv import UvBuilder
 from .environment import Environment
 from .service import TaskException  # noqa: F401
 from .shm import NDArray, SharedMemory  # noqa: F401
-from ._version import __version__  # noqa: F401
 
 
 def pixi(source: str | Path | None = None) -> PixiBuilder:

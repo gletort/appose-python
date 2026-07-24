@@ -22,13 +22,10 @@ from typing import Callable
 from urllib.request import urlopen
 
 from ..environment import Environment
-from ..scheme import (
-    Scheme,
-    from_content as scheme_from_content,
-    from_name as scheme_from_name,
-)
+from ..scheme import Scheme
+from ..scheme import from_content as scheme_from_content
+from ..scheme import from_name as scheme_from_name
 from ..util.filepath import appose_envs_dir
-
 
 # Type alias for progress callback
 ProgressConsumer = Callable[[str, int, int], None]
@@ -114,7 +111,7 @@ class Builder(ABC):
         """
         try:
             self.delete()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 -- any deletion failure is wrapped as a BuildException
             raise BuildException(self, cause=e)
         return self.build()
 
@@ -227,7 +224,7 @@ class Builder(ABC):
             with open(file_path, "r", encoding="utf-8") as f:
                 content = f.read()
             return self.content(content)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 -- any read failure is wrapped as a BuildException
             raise BuildException(self, cause=e)
 
     def url(self, url: str) -> Builder:
@@ -249,7 +246,7 @@ class Builder(ABC):
             with urlopen(url) as response:
                 content = response.read().decode("utf-8")
             return self.content(content)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 -- any fetch failure is wrapped as a BuildException
             raise BuildException(self, cause=e)
 
     @abstractmethod
@@ -691,7 +688,7 @@ class SimpleBuilder(BaseBuilder):
         if not base.exists():
             try:
                 base.mkdir(parents=True, exist_ok=True)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 -- any mkdir failure is wrapped as a BuildException
                 raise BuildException(
                     self, f"Failed to create base directory: {base}", e
                 )
@@ -924,8 +921,8 @@ def _discover_factories() -> list[BuilderFactory]:
             from importlib_metadata import entry_points
         except ImportError:
             # If no entry point support, use hardcoded defaults
-            from .pixi import PixiBuilderFactory
             from .mamba import MambaBuilderFactory
+            from .pixi import PixiBuilderFactory
             from .uv import UvBuilderFactory
 
             _BUILDERS = sorted(
@@ -953,7 +950,7 @@ def _discover_factories() -> list[BuilderFactory]:
         try:
             factory_class = ep.load()
             factories.append(factory_class())
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 -- a broken plugin factory should warn, not crash discovery
             print(
                 f"Warning: Failed to load builder factory {ep.name}: {e}",
                 file=sys.stderr,
@@ -961,8 +958,8 @@ def _discover_factories() -> list[BuilderFactory]:
 
     # If no entry points found, fall back to hardcoded defaults
     if not factories:
-        from .pixi import PixiBuilderFactory
         from .mamba import MambaBuilderFactory
+        from .pixi import PixiBuilderFactory
         from .uv import UvBuilderFactory
 
         factories = [

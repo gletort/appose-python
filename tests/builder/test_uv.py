@@ -6,12 +6,9 @@
 
 from pathlib import Path
 
-
 import appose
 from appose.builder.uv import UvBuilder
-
 from tests.test_base import cowsay_and_assert
-
 
 # Get the path to test resources
 TEST_RESOURCES: Path = Path(__file__).parent.parent / "resources" / "envs"
