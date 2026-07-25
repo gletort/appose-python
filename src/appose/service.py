@@ -15,7 +15,7 @@ import threading
 from enum import Enum
 from pathlib import Path
 from traceback import format_exc
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, overload
 from uuid import uuid4
 
 from .syntax import ScriptSyntax
@@ -183,9 +183,15 @@ class Service:
         self.start()
         return Task(self, script, inputs, queue)
 
+    @overload
+    def syntax(self) -> ScriptSyntax | None: ...
+
+    @overload
+    def syntax(self, syntax: str | ScriptSyntax) -> Service: ...
+
     def syntax(
         self, syntax: str | ScriptSyntax | None = None
-    ) -> Service | ScriptSyntax:
+    ) -> Service | ScriptSyntax | None:
         """
         Get or declare the script syntax of this service.
 
