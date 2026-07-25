@@ -183,9 +183,15 @@ class Service:
         self.start()
         return Task(self, script, inputs, queue)
 
-    def syntax(self, syntax: str | ScriptSyntax) -> Service:
+    def syntax(
+        self, syntax: str | ScriptSyntax | None = None
+    ) -> Service | ScriptSyntax:
         """
-        Declare the script syntax of this service.
+        Get or declare the script syntax of this service.
+
+        Called with no argument, returns the current script syntax strategy
+        (or None if not set). Called with an argument, declares the syntax and
+        returns this service for chaining.
 
         This value determines which ScriptSyntax implementation is used
         for generating language-specific scripts.
@@ -196,14 +202,18 @@ class Service:
         registered ScriptSyntax plugins.
 
         Args:
-            syntax: The type identifier (e.g., "python", "groovy").
+            syntax: The type identifier (e.g., "python", "groovy"), a
+                ScriptSyntax instance, or None to retrieve the current syntax.
 
         Returns:
-            This service object, for chaining method calls.
+            The current script syntax when called with no argument; otherwise
+            this service object, for chaining method calls.
 
         Raises:
             ValueError: If no syntax plugin is found for the given type.
         """
+        if syntax is None:
+            return self._syntax
         self._syntax = (
             syntax if isinstance(syntax, ScriptSyntax) else syntax_from_name(syntax)
         )
@@ -606,15 +616,19 @@ class Task:
 
         return self
 
-    def listen(self, listener: Callable[[TaskEvent], None]) -> None:
+    def listen(self, listener: Callable[[TaskEvent], None]) -> Task:
         """
         Register a callback function to be notified of updates to the task.
+
+        Returns:
+            This task, for chaining method calls.
         """
         with self.cv:
             if self.status != TaskStatus.INITIAL:
                 raise RuntimeError("Task is not in the INITIAL state")
 
             self.listeners.append(listener)
+        return self
 
     def wait_for(self) -> Task:
         """

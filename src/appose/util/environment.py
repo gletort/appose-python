@@ -9,6 +9,7 @@ Utility functions for working with environments.
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 
 def env_vars(*keys: str) -> dict[str, str]:
@@ -48,3 +49,20 @@ def system_path() -> list[str]:
 
     separator = os.pathsep
     return path_env.split(separator)
+
+
+def appose_envs_dir() -> str:
+    """
+    Get the top-level directory for Appose-managed environments.
+
+    Defaults to ~/.local/share/appose but can be overridden by setting
+    the APPOSE_ENVS_DIR environment variable.
+
+    Returns:
+        The directory housing all Appose-managed environments.
+    """
+    envs_dir = os.environ.get("APPOSE_ENVS_DIR")
+    if envs_dir:
+        return envs_dir
+
+    return str(Path.home() / ".local" / "share" / "appose")

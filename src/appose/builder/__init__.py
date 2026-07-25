@@ -25,7 +25,7 @@ from ..environment import Environment
 from ..scheme import Scheme
 from ..scheme import from_content as scheme_from_content
 from ..scheme import from_name as scheme_from_name
-from ..util.filepath import appose_envs_dir
+from ..util.environment import appose_envs_dir
 
 # Type alias for progress callback
 ProgressConsumer = Callable[[str, int, int], None]

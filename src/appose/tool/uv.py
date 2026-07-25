@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ..util import download, filepath, platform
+from ..util import download, environment, platform
 from . import Tool
 
 
@@ -55,7 +55,7 @@ class Uv(Tool):
     UV_VERSION = "0.9.5"
 
     # Path where Appose installs uv by default (.uv subdirectory thereof)
-    BASE_PATH: str = filepath.appose_envs_dir()
+    BASE_PATH: str = environment.appose_envs_dir()
 
     # The filename to download for the current platform
     UV_BINARY: str | None = _uv_binary()

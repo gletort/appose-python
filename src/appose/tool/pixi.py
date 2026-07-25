@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ..util import download, filepath, platform
+from ..util import download, environment, platform
 from . import Tool
 
 
@@ -48,7 +48,7 @@ class Pixi(Tool):
     PIXI_VERSION: str = "v0.58.0"
 
     # Path where Appose installs Pixi by default (.pixi subdirectory thereof)
-    BASE_PATH: str = filepath.appose_envs_dir()
+    BASE_PATH: str = environment.appose_envs_dir()
 
     # The filename to download for the current platform
     PIXI_BINARY: str | None = _pixi_binary()

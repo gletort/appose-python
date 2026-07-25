@@ -38,7 +38,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ..util import download, filepath, platform
+from ..util import download, environment, platform
 from . import Tool
 
 
@@ -74,7 +74,7 @@ class Mamba(Tool):
     """
 
     # Path where Appose installs Micromamba by default
-    BASE_PATH: str = str(Path(filepath.appose_envs_dir()) / ".mamba")
+    BASE_PATH: str = str(Path(environment.appose_envs_dir()) / ".mamba")
 
     # The platform string for micromamba download
     PLATFORM: str | None = _micromamba_platform()
