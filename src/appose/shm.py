@@ -188,8 +188,19 @@ message.register(
 
 
 def _bytes_per_element(dtype: str) -> int | float:
+    """
+        Returns the number of bytes for the given type name
+        The type name can be standard, e.g. uint16, float32... in that case, parsing the number in the string gives the number of bits, to divide by 8.
+        The type name can also be a short version with bytes numbers, e.g. >u2, <f4... Parsing gives directly the nb of bytes
+    """
     try:
-        bits = int(re.sub("[^0-9]", "", dtype))
+        # Standard names (e.g., 'uint16', 'float32')
+        if dtype.startswith(("uint", "int", "float", "bool", "complex")):
+            bits = int(re.sub("[^0-9]", "", dtype))
+            bytes_size = bits / 8
+        # Short names (e.g., '>u2', '<f4', '|u1')
+        else:
+            bytes_size = int(re.sub("[^0-9]", "", dtype))
     except ValueError:
         raise ValueError(f"Invalid dtype: {dtype}")
-    return bits / 8
+    return bytes_size 
