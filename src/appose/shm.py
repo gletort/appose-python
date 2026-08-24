@@ -194,7 +194,7 @@ def _bytes_per_element(dtype: str) -> int | float:
     The type name can also be a short version with bytes numbers, e.g. >u2, <f4... Parsing gives directly the nb of bytes
     """
     try:
-        ## boolean object should be one byte 
+        ## boolean object should be one byte
         if dtype.startswith("bool"):
             bytes_size = 1
         # Standard names (e.g., 'uint16', 'float32')
