@@ -198,15 +198,15 @@ def _bytes_per_element(dtype: str) -> int | float:
       the number of bytes, so the parsed value is returned as is.
     """
     try:
-        ## boolean object should be one byte
         if dtype.startswith("bool"):
+            # 1-byte boolean object
             bytes_size = 1
-        # Standard names (e.g., 'uint16', 'float32')
         elif dtype.startswith(("uint", "int", "float", "complex")):
+            # standard names (e.g. 'uint16', 'float32')
             bits = int(re.sub("[^0-9]", "", dtype))
             bytes_size = bits / 8
-        # Short names (e.g., '>u2', '<f4', '|u1')
         else:
+            # short names (e.g. '>u2', '<f4', '|u1')
             bytes_size = int(re.sub("[^0-9]", "", dtype))
     except ValueError:
         raise ValueError(f"Invalid dtype: {dtype}")
