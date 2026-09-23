@@ -90,8 +90,16 @@ def test_dtype_short_forms():
 
 
 def test_dtype_explicit_byte_order():
-    for dtype in ["<u2", ">u2", "<f4", ">c16", "<uint16", ">float32"]:
-        with pytest.raises(ValueError, match="native byte order"):
+    for dtype, name in [
+        ("<u2", "uint16"),
+        (">u2", "uint16"),
+        ("<f4", "float32"),
+        (">c16", "complex128"),
+        ("<?", "bool"),
+        ("<uint16", "uint16"),
+        (">float32", "float32"),
+    ]:
+        with pytest.raises(ValueError, match=f"native byte order; use '{name}'"):
             _normalize_dtype(dtype)
 
 
@@ -114,6 +122,8 @@ def test_dtype_unsupported():
         "float128",
         "intp",
         "U10",
+        "<U10",
+        ">i3",
         "datetime64[ns]",
         "object",
         "FLOAT32",
@@ -131,7 +141,7 @@ def test_ndarray_normalizes_dtype():
 def test_from_ndarray_big_endian():
     # A big-endian array, as produced by some image readers.
     src = (numpy.arange(3 * 4 * 5).reshape(3, 4, 5) * 1000).astype(">u2")
-    with pytest.raises(ValueError, match="native byte order"):
+    with pytest.raises(ValueError, match="use 'uint16'"):
         appose.NDArray(str(src.dtype), list(src.shape))
     with appose.NDArray.from_ndarray(src) as data:
         assert "uint16" == data.dtype

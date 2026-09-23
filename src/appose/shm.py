@@ -131,7 +131,9 @@ class NDArray:
                 NumPy-style short forms (e.g. u2, f4, |u1, =c8) are also accepted,
                 and normalized to the standard name (e.g. uint16, float32).
                 Explicit byte orders (< or >) are rejected: Appose arrays
-                always use the machine's native byte order.
+                always use the machine's native byte order. To match a NumPy
+                array, pass arr.dtype.name, not str(arr.dtype), which keeps a
+                non-native byte order; or use from_ndarray to copy the array.
             shape: The dimensional extents; e.g. a stack of 7 image planes
                 with resolution 512x512 would have shape [7, 512, 512].
             shm: The SharedMemory containing the array data, or None to create it.
@@ -265,11 +267,15 @@ def _normalize_dtype(dtype: str) -> str:
     if dtype in _DTYPE_SIZES:
         return dtype
     if dtype.startswith(("<", ">")):
-        raise ValueError(
-            f"Unsupported dtype: {dtype} "
-            "(Appose arrays are always native byte order; "
-            "omit the < or > prefix)"
-        )
+        name = _DTYPE_ALIASES.get(dtype[1:], dtype[1:])
+        if name in _DTYPE_SIZES:
+            raise ValueError(
+                f"Unsupported dtype: {dtype} "
+                "(Appose arrays are always in native byte order; "
+                f"use '{name}' instead, e.g. via arr.dtype.name, "
+                "or copy a NumPy array into shared memory "
+                "via NDArray.from_ndarray(arr))"
+            )
     short = dtype[1:] if dtype.startswith(("=", "|")) else dtype
     if short not in _DTYPE_ALIASES:
         raise ValueError(f"Unsupported dtype: {dtype}")
