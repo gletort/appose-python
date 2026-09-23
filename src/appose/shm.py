@@ -189,9 +189,13 @@ message.register(
 
 def _bytes_per_element(dtype: str) -> int | float:
     """
-    Returns the number of bytes for the given type name
-    The type name can be standard, e.g. uint16, float32... in that case, parsing the number in the string gives the number of bits, to divide by 8.
-    The type name can also be a short version with bytes numbers, e.g. >u2, <f4... Parsing gives directly the nb of bytes
+    Return the number of bytes for the given type name.
+
+    * For long-form types (e.g. uint16 or float32), the string indicates
+      the number of bits, so the parsed value is divided by 8.
+
+    * For short-form types (e.g. >u2 or <f4), the string indicates
+      the number of bytes, so the parsed value is returned as is.
     """
     try:
         ## boolean object should be one byte
