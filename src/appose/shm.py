@@ -8,8 +8,7 @@ TODO
 
 from __future__ import annotations
 
-import re
-from math import ceil, prod
+from math import prod
 from multiprocessing import resource_tracker, shared_memory
 from typing import TYPE_CHECKING
 
@@ -129,15 +128,19 @@ class NDArray:
 
         Args:
             dtype: The type of the data elements; e.g. int8, uint8, float32, float64.
+                NumPy-style short forms (e.g. u2, f4, |u1, =c8) are also accepted,
+                and normalized to the standard name (e.g. uint16, float32).
+                Explicit byte orders (< or >) are rejected: Appose arrays
+                always use the machine's native byte order.
             shape: The dimensional extents; e.g. a stack of 7 image planes
                 with resolution 512x512 would have shape [7, 512, 512].
             shm: The SharedMemory containing the array data, or None to create it.
         """
-        self.dtype: str = dtype
+        self.dtype: str = _normalize_dtype(dtype)
         self.shape: list[int] = shape
         self.shm: SharedMemory = (
             SharedMemory(
-                create=True, rsize=ceil(prod(shape) * _bytes_per_element(dtype))
+                create=True, rsize=prod(shape) * _bytes_per_element(self.dtype)
             )
             if shm is None
             else shm
@@ -187,28 +190,73 @@ message.register(
 )
 
 
-def _bytes_per_element(dtype: str) -> int | float:
+# Standard dtype names, with the number of bytes per element of each.
+_DTYPE_SIZES = {
+    "int8": 1,
+    "int16": 2,
+    "int32": 4,
+    "int64": 8,
+    "uint8": 1,
+    "uint16": 2,
+    "uint32": 4,
+    "uint64": 8,
+    "float16": 2,
+    "float32": 4,
+    "float64": 8,
+    "complex64": 8,
+    "complex128": 16,
+    "bool": 1,
+}
+
+# NumPy-style short forms of the standard dtype names.
+_DTYPE_ALIASES = {
+    "i1": "int8",
+    "i2": "int16",
+    "i4": "int32",
+    "i8": "int64",
+    "u1": "uint8",
+    "u2": "uint16",
+    "u4": "uint32",
+    "u8": "uint64",
+    "f2": "float16",
+    "f4": "float32",
+    "f8": "float64",
+    "c8": "complex64",
+    "c16": "complex128",
+    "b1": "bool",
+    "?": "bool",
+}
+
+
+def _normalize_dtype(dtype: str) -> str:
     """
-    Return the number of bytes for the given type name.
+    Return the standard name of the given dtype; e.g. "<u2" -> "uint16".
 
-    * For long-form types (e.g. uint16 or float32), the string indicates
-      the number of bits, so the parsed value is divided by 8.
+    Accepts standard names (e.g. uint16, float32) as well as NumPy-style
+    short forms (e.g. u2, f4). A short form may be prefixed with = (native
+    byte order) or | (byte order not applicable), which is ignored. Explicit
+    byte orders (< or >) are rejected, so that parsing behaves the same on
+    every machine; Appose arrays always use the machine's native byte order.
 
-    * For short-form types (e.g. >u2 or <f4), the string indicates
-      the number of bytes, so the parsed value is returned as is.
+    Only platform-independent types are supported; e.g. longdouble and
+    single-character codes like "l" are rejected, since their sizes vary.
     """
-    try:
-        if dtype.startswith("bool"):
-            # 1-byte boolean object
-            bytes_size = 1
-        elif dtype.startswith(("uint", "int", "float", "complex")):
-            # standard names (e.g. 'uint16', 'float32')
-            bits = int(re.sub("[^0-9]", "", dtype))
-            bytes_size = bits / 8
-        else:
-            # short names (e.g. '>u2', '<f4', '|u1')
-            bytes_size = int(re.sub("[^0-9]", "", dtype))
-    except ValueError:
-        raise ValueError(f"Invalid dtype: {dtype}")
+    if dtype in _DTYPE_SIZES:
+        return dtype
+    if dtype.startswith(("<", ">")):
+        raise ValueError(
+            f"Unsupported dtype: {dtype} "
+            "(Appose arrays are always native byte order; "
+            "omit the < or > prefix)"
+        )
+    short = dtype[1:] if dtype.startswith(("=", "|")) else dtype
+    if short not in _DTYPE_ALIASES:
+        raise ValueError(f"Unsupported dtype: {dtype}")
+    return _DTYPE_ALIASES[short]
 
-    return bytes_size
+
+def _bytes_per_element(dtype: str) -> int:
+    """
+    Return the number of bytes per element for the given dtype.
+    """
+    return _DTYPE_SIZES[_normalize_dtype(dtype)]
