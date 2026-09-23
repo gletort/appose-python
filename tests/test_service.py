@@ -247,7 +247,9 @@ def test_python_sys_exit():
 
 def test_crash_with_active_task():
     env = appose.system()
-    with env.python() as service:
+    # Note: Import numpy (a dev dependency) up front, so that the worker does
+    # not emit its numpy warning, which would pollute the stderr under test.
+    with env.python().init("import numpy") as service:
         maybe_debug(service)
         # Create a "long-running" task.
         script = (

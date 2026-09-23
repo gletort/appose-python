@@ -2,6 +2,7 @@
 # Copyright (C) 2023 - 2026 Appose developers.
 # SPDX-License-Identifier: BSD-2-Clause
 
+import numpy
 import pytest
 
 import appose
@@ -125,3 +126,30 @@ def test_ndarray_normalizes_dtype():
     with appose.NDArray("=u2", [3, 5]) as data:
         assert "uint16" == data.dtype
         assert 3 * 5 * 2 == data.shm.rsize
+
+
+def test_from_ndarray_big_endian():
+    # A big-endian array, as produced by some image readers.
+    src = (numpy.arange(3 * 4 * 5).reshape(3, 4, 5) * 1000).astype(">u2")
+    with pytest.raises(ValueError, match="native byte order"):
+        appose.NDArray(str(src.dtype), list(src.shape))
+    with appose.NDArray.from_ndarray(src) as data:
+        assert "uint16" == data.dtype
+        assert [3, 4, 5] == data.shape
+        assert 3 * 4 * 5 * 2 == data.shm.rsize
+        dst = data.ndarray()
+        assert dst.dtype.isnative
+        assert numpy.array_equal(src, dst)
+
+
+def test_from_ndarray_non_contiguous():
+    src = numpy.arange(24, dtype="float32").reshape(2, 3, 4).transpose(2, 0, 1)
+    with appose.NDArray.from_ndarray(src) as data:
+        assert "float32" == data.dtype
+        assert [4, 2, 3] == data.shape
+        assert numpy.array_equal(src, data.ndarray())
+
+
+def test_from_ndarray_unsupported():
+    with pytest.raises(ValueError, match="Unsupported dtype: datetime64"):
+        appose.NDArray.from_ndarray(numpy.zeros(3, dtype="datetime64[ns]"))

@@ -169,6 +169,27 @@ class NDArray:
         except ModuleNotFoundError:
             raise ImportError("NumPy is not available.")
 
+    @classmethod
+    def from_ndarray(cls, arr) -> NDArray:
+        """
+        Create an NDArray in new shared memory, holding a copy of the given
+        NumPy array.
+
+        The data is copied value by value, so the source array may be in any
+        byte order and memory layout (e.g. a big-endian array, or a transposed
+        view); the copy is always C-ordered, in native byte order.
+
+        Args:
+            arr: The NumPy array to copy.
+        """
+        nda = cls(arr.dtype.name, list(arr.shape))
+        try:
+            nda.ndarray()[:] = arr
+        except BaseException:
+            nda.shm.dispose()
+            raise
+        return nda
+
     def __enter__(self) -> Self:
         return self
 
