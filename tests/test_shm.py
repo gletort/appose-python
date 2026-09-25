@@ -138,28 +138,53 @@ def test_ndarray_normalizes_dtype():
         assert 3 * 5 * 2 == data.shm.rsize
 
 
-def test_from_ndarray_big_endian():
+def test_copy_of_big_endian():
     # A big-endian array, as produced by some image readers.
     src = (numpy.arange(3 * 4 * 5).reshape(3, 4, 5) * 1000).astype(">u2")
     with pytest.raises(ValueError, match="use 'uint16'"):
         appose.NDArray(str(src.dtype), list(src.shape))
-    with appose.NDArray.from_ndarray(src) as data:
+    with appose.NDArray.copy_of(src) as data:
         assert "uint16" == data.dtype
         assert [3, 4, 5] == data.shape
         assert 3 * 4 * 5 * 2 == data.shm.rsize
-        dst = data.ndarray()
+        dst = numpy.asarray(data)
         assert dst.dtype.isnative
         assert numpy.array_equal(src, dst)
 
 
-def test_from_ndarray_non_contiguous():
+def test_copy_of_non_contiguous():
     src = numpy.arange(24, dtype="float32").reshape(2, 3, 4).transpose(2, 0, 1)
-    with appose.NDArray.from_ndarray(src) as data:
+    with appose.NDArray.copy_of(src) as data:
         assert "float32" == data.dtype
         assert [4, 2, 3] == data.shape
-        assert numpy.array_equal(src, data.ndarray())
+        assert numpy.array_equal(src, numpy.asarray(data))
 
 
-def test_from_ndarray_unsupported():
+def test_copy_of_unsupported():
     with pytest.raises(ValueError, match="Unsupported dtype: datetime64"):
-        appose.NDArray.from_ndarray(numpy.zeros(3, dtype="datetime64[ns]"))
+        appose.NDArray.copy_of(numpy.zeros(3, dtype="datetime64[ns]"))
+
+
+def test_asarray_zero_copy():
+    with appose.NDArray("float32", [2, 3]) as data:
+        arr = numpy.asarray(data)
+        assert "float32" == arr.dtype.name
+        assert (2, 3) == arr.shape
+        arr[1, 2] = 42
+        assert 42 == numpy.asarray(data)[1, 2]
+
+        copied = numpy.array(data)
+        copied[0, 0] = 7
+        assert 0 == numpy.asarray(data)[0, 0]
+
+        converted = numpy.asarray(data, dtype="float64")
+        assert "float64" == converted.dtype.name
+        assert 42 == converted[1, 2]
+
+
+def test_ndarray_deprecated():
+    with appose.NDArray("uint8", [4]) as data:
+        with pytest.warns(DeprecationWarning, match="numpy.asarray"):
+            arr = data.ndarray()
+        arr[0] = 9
+        assert 9 == numpy.asarray(data)[0]

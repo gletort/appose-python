@@ -8,6 +8,7 @@ TODO
 
 from __future__ import annotations
 
+import warnings
 from math import prod
 from multiprocessing import resource_tracker, shared_memory
 from typing import TYPE_CHECKING
@@ -133,7 +134,7 @@ class NDArray:
                 Explicit byte orders (< or >) are rejected: Appose arrays
                 always use the machine's native byte order. To match a NumPy
                 array, pass arr.dtype.name, not str(arr.dtype), which keeps a
-                non-native byte order; or use from_ndarray to copy the array.
+                non-native byte order; or use copy_of to copy the array.
             shape: The dimensional extents; e.g. a stack of 7 image planes
                 with resolution 512x512 would have shape [7, 512, 512].
             shm: The SharedMemory containing the array data, or None to create it.
@@ -156,23 +157,44 @@ class NDArray:
             f"shm='{self.shm.name}' ({self.shm.rsize}))"
         )
 
+    def __array__(self, dtype=None, copy=None):
+        """
+        Support numpy.asarray(nda), which wraps the array data as a NumPy
+        ndarray without copying it; the NumPy array uses the same SharedMemory.
+        Requires the numpy package to be installed.
+        """
+        try:
+            import numpy
+        except ModuleNotFoundError:
+            raise ImportError("NumPy is not available.")
+        arr = numpy.ndarray(
+            prod(self.shape), dtype=self.dtype, buffer=self.shm.buf
+        ).reshape(self.shape)
+        if dtype is None:
+            dtype = arr.dtype
+        if copy is False and numpy.dtype(dtype) != arr.dtype:
+            raise ValueError(
+                f"Cannot convert NDArray from {arr.dtype} to {dtype} without copying"
+            )
+        return arr.astype(dtype, copy=bool(copy))
+
     def ndarray(self):
         """
         Create a NumPy ndarray object for working with the array data.
         No array data is copied; the NumPy array wraps the same SharedMemory.
         Requires the numpy package to be installed.
-        """
-        try:
-            import numpy
 
-            return numpy.ndarray(
-                prod(self.shape), dtype=self.dtype, buffer=self.shm.buf
-            ).reshape(self.shape)
-        except ModuleNotFoundError:
-            raise ImportError("NumPy is not available.")
+        Deprecated: use numpy.asarray(nda) instead.
+        """
+        warnings.warn(
+            "NDArray.ndarray() is deprecated; use numpy.asarray(nda) instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.__array__()
 
     @classmethod
-    def from_ndarray(cls, arr) -> NDArray:
+    def copy_of(cls, arr) -> NDArray:
         """
         Create an NDArray in new shared memory, holding a copy of the given
         NumPy array.
@@ -186,7 +208,7 @@ class NDArray:
         """
         nda = cls(arr.dtype.name, list(arr.shape))
         try:
-            nda.ndarray()[:] = arr
+            nda.__array__()[:] = arr
         except BaseException:
             nda.shm.dispose()
             raise
@@ -274,7 +296,7 @@ def _normalize_dtype(dtype: str) -> str:
                 "(Appose arrays are always in native byte order; "
                 f"use '{name}' instead, e.g. via arr.dtype.name, "
                 "or copy a NumPy array into shared memory "
-                "via NDArray.from_ndarray(arr))"
+                "via NDArray.copy_of(arr))"
             )
     short = dtype[1:] if dtype.startswith(("=", "|")) else dtype
     if short not in _DTYPE_ALIASES:
